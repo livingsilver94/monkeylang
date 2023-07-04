@@ -6,12 +6,12 @@ use std::str::{self, FromStr};
 
 #[derive(strum::Display, strum::EnumString, Debug, PartialEq, Eq)]
 #[strum(serialize_all = "UPPERCASE")]
-pub enum TokenKind {
+pub enum Token {
     #[strum(serialize = "")]
     EOF,
 
-    Identifier,
-    Integer,
+    Identifier(String),
+    Integer(String),
 
     #[strum(serialize = "=")]
     Assign,
@@ -31,11 +31,11 @@ pub enum TokenKind {
     LeftBrace,
     #[strum(serialize = "}")]
     RightBrace,
-}
 
-pub struct Token {
-    pub kind: TokenKind,
-    pub value: String,
+    #[strum(serialize = "fn")]
+    Function,
+    #[strum(serialize = "let")]
+    Let,
 }
 
 pub struct Lexer<R> {
@@ -59,14 +59,10 @@ impl<T: io::Read> Lexer<T> {
 
     fn read_token(&mut self) -> Result<Token, Error> {
         let s = &[self.read_char()?];
-        let kind = str::from_utf8(s)
+        str::from_utf8(s)
             .ok()
-            .and_then(|s| TokenKind::from_str(s).ok())
-            .ok_or_else(|| Error::TokenError(format!("{:x}", s[0])))?;
-        Ok(Token {
-            kind,
-            value: (s[0] as char).to_string(),
-        })
+            .and_then(|s| Token::from_str(s).ok())
+            .ok_or_else(|| Error::TokenError(format!("{:x}", s[0])))
     }
 }
 

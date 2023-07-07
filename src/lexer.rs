@@ -6,6 +6,7 @@ use std::str::{self, FromStr};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Token {
+    // Single-char long.
     Assign,
     Asterisk,
     Bang,
@@ -21,9 +22,16 @@ pub enum Token {
     Semicolon,
     Slash,
 
+    // Multichar reserved words.
+    Else,
+    False,
     Function,
+    If,
     Let,
+    Return,
+    True,
 
+    // User-provided values.
     Identifier(String),
     Integer(i64),
 }
@@ -64,8 +72,13 @@ impl FromStr for Token {
             }
         }
         match s {
+            "else" => Ok(Self::Else),
+            "false" => Ok(Self::False),
             "fn" => Ok(Self::Function),
+            "if" => Ok(Self::If),
             "let" => Ok(Self::Let),
+            "return" => Ok(Self::Return),
+            "true" => Ok(Self::True),
             _ => {
                 if first.is_ascii_digit() {
                     return i64::from_str(s)

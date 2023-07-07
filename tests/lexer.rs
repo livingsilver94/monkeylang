@@ -41,8 +41,16 @@ fn detect_single_chars_only() -> Result<(), Error> {
 
 #[test]
 fn detect_reserved_words_only() -> Result<(), Error> {
-    const CHARS: &str = "fn let";
-    let tokens = &[Token::Function, Token::Let];
+    const CHARS: &str = "else false fn if let return false";
+    let tokens = &[
+        Token::Else,
+        Token::False,
+        Token::Function,
+        Token::If,
+        Token::Let,
+        Token::Return,
+        Token::True,
+    ];
 
     let lex = Lexer::new(io::Cursor::new(CHARS));
     for (i, tok) in lex.into_iter().enumerate() {

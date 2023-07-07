@@ -3,7 +3,15 @@ use std::io;
 use monkeylang::lexer::*;
 
 #[test]
-fn iterate_single_char_tokens() -> Result<(), Error> {
+fn skip_whitespaces() {
+    const CHARS: &str = " \t\n\r";
+
+    let lex = Lexer::new(io::Cursor::new(CHARS));
+    assert!(lex.into_iter().next().is_none());
+}
+
+#[test]
+fn detect_single_chars_only() -> Result<(), Error> {
     const CHARS: &str = "=*!,>{(<-+});/";
     let tokens = &[
         Token::Assign,
@@ -32,27 +40,55 @@ fn iterate_single_char_tokens() -> Result<(), Error> {
 }
 
 #[test]
-fn iterate_multi_char_tokens() -> Result<(), Error> {
-    const CHARS: &str = r#"
-let five = 5;
-let ten = 10;
+fn detect_reserved_words_only() -> Result<(), Error> {
+    const CHARS: &str = "fn let";
+    let tokens = &[Token::Function, Token::Let];
 
-let add = fn(x, y) {
-    x + y;
-};
+    let lex = Lexer::new(io::Cursor::new(CHARS));
+    for (i, tok) in lex.into_iter().enumerate() {
+        let tok = tok?;
+        assert_eq!(tok, tokens[i]);
+        assert_eq!(tok, tokens[i]);
+    }
+    Ok(())
+}
 
-let result = add(five, ten);"#;
+#[test]
+fn detect_integer_assignments() -> Result<(), Error> {
+    const CHARS: &str = "\
+let one_digit = 5;
+let multidigit = 10;";
     let tokens = &[
         Token::Let,
-        Token::Identifier("five".to_string()),
+        Token::Identifier("one_digit".to_string()),
         Token::Assign,
         Token::Integer(5),
         Token::Semicolon,
         Token::Let,
-        Token::Identifier("ten".to_string()),
+        Token::Identifier("multidigit".to_string()),
         Token::Assign,
         Token::Integer(10),
         Token::Semicolon,
+    ];
+
+    let lex = Lexer::new(io::Cursor::new(CHARS));
+    for (i, tok) in lex.into_iter().enumerate() {
+        let tok = tok?;
+        assert_eq!(tok, tokens[i]);
+        assert_eq!(tok, tokens[i]);
+    }
+    Ok(())
+}
+
+#[test]
+fn detect_function_assignments() -> Result<(), Error> {
+    const CHARS: &str = "\
+let add = fn(x, y) {
+    x + y;
+};
+
+let result = add(five, ten);";
+    let tokens = &[
         Token::Let,
         Token::Identifier("add".to_string()),
         Token::Assign,

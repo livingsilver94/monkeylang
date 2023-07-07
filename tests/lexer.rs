@@ -4,15 +4,22 @@ use monkeylang::lexer::*;
 
 #[test]
 fn iterate_single_char_tokens() -> Result<(), Error> {
-    const CHARS: &str = "=+(){},";
+    const CHARS: &str = "=*!,>{(<-+});/";
     let tokens = &[
         Token::Assign,
-        Token::Plus,
-        Token::LeftParen,
-        Token::RightParen,
-        Token::LeftBrace,
-        Token::RightBrace,
+        Token::Asterisk,
+        Token::Bang,
         Token::Comma,
+        Token::GreaterThan,
+        Token::LeftBrace,
+        Token::LeftParen,
+        Token::LessThan,
+        Token::Minus,
+        Token::Plus,
+        Token::RightBrace,
+        Token::RightParen,
+        Token::Semicolon,
+        Token::Slash,
     ];
 
     let lex = Lexer::new(io::Cursor::new(CHARS));

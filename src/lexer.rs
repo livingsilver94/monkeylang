@@ -6,35 +6,45 @@ use std::str::{self, FromStr};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Token {
-    Identifier(String),
-    Integer(i64),
-
     Assign,
-    Plus,
-
+    Asterisk,
+    Bang,
     Comma,
-    Semicolon,
-
-    LeftParen,
-    RightParen,
+    GreaterThan,
     LeftBrace,
+    LeftParen,
+    LessThan,
+    Minus,
+    Plus,
     RightBrace,
+    RightParen,
+    Semicolon,
+    Slash,
 
     Function,
     Let,
+
+    Identifier(String),
+    Integer(i64),
 }
 
 impl Token {
     fn from_char(ch: char) -> Option<Self> {
         match ch {
             '=' => Some(Self::Assign),
-            '+' => Some(Self::Plus),
+            '*' => Some(Self::Asterisk),
+            '!' => Some(Self::Bang),
             ',' => Some(Self::Comma),
-            ';' => Some(Self::Semicolon),
-            '(' => Some(Self::LeftParen),
-            ')' => Some(Self::RightParen),
+            '>' => Some(Self::GreaterThan),
             '{' => Some(Self::LeftBrace),
+            '(' => Some(Self::LeftParen),
+            '<' => Some(Self::LessThan),
+            '-' => Some(Self::Minus),
+            '+' => Some(Self::Plus),
             '}' => Some(Self::RightBrace),
+            ')' => Some(Self::RightParen),
+            ';' => Some(Self::Semicolon),
+            '/' => Some(Self::Slash),
             _ => None,
         }
     }

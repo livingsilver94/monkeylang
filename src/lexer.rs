@@ -1,7 +1,6 @@
 use std::fmt;
-use std::io::{self, Read};
+use std::io;
 use std::iter;
-use std::slice;
 use std::str::{self, FromStr};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -21,6 +20,10 @@ pub enum Token {
     RightParen,
     Semicolon,
     Slash,
+
+    // Two-char long.
+    Equal,
+    NotEqual,
 
     // Multichar reserved words.
     Else,
@@ -56,6 +59,21 @@ impl Token {
             _ => None,
         }
     }
+
+    fn from_two_chars(chs: &[char; 2]) -> Option<Self> {
+        if chs[1] != '=' {
+            return None;
+        }
+        match chs[0] {
+            '!' => Some(Self::NotEqual),
+            '=' => Some(Self::Equal),
+            _ => None,
+        }
+    }
+
+    fn may_be_two_chars(ch: char) -> bool {
+        ch == '!' || ch == '='
+    }
 }
 
 impl FromStr for Token {
@@ -68,6 +86,12 @@ impl FromStr for Token {
         let first = s.as_bytes()[0] as char;
         if s.len() == 1 {
             if let Some(tok) = Self::from_char(first) {
+                return Ok(tok);
+            }
+        }
+        if s.len() == 2 {
+            let second = s.as_bytes()[1] as char;
+            if let Some(tok) = Self::from_two_chars(&[first, second]) {
                 return Ok(tok);
             }
         }
@@ -91,27 +115,38 @@ impl FromStr for Token {
     }
 }
 
-pub struct Lexer<R> {
-    input: io::BufReader<R>,
+pub struct Lexer<R: std::io::Read> {
+    input: iter::Peekable<io::Bytes<R>>,
     token_buf: String,
-    /// The latest character read but not yet parsed.
-    latest_char: Option<char>,
 }
 
 impl<R: io::Read> Lexer<R> {
-    pub fn new(inp: R) -> Self {
+    pub fn new(input: R) -> Self {
         Self {
-            input: io::BufReader::new(inp),
+            input: input.bytes().peekable(),
             token_buf: String::with_capacity(32),
-            latest_char: None,
         }
     }
 
     /// Returns the next character.
     fn read_char(&mut self) -> Result<char, Error> {
-        let mut byte: u8 = 0;
-        self.input
-            .read_exact(slice::from_mut(&mut byte))
+        let byte = self
+            .input
+            .next()
+            .unwrap_or(Err(io::Error::from(io::ErrorKind::UnexpectedEof)))?;
+        char::from_u32(byte as u32).ok_or_else(|| Error::TokenError(format!("{:x}", byte)))
+    }
+
+    /// Peeks the next character. If it was able to read the character,
+    fn peek_char(&mut self) -> Result<char, Error> {
+        let byte = self
+            .input
+            .peek()
+            .map(|result| match result {
+                Ok(byte) => Ok(*byte),
+                Err(e) => Err(io::Error::from(e.kind())),
+            })
+            .unwrap_or(Err(io::Error::from(io::ErrorKind::UnexpectedEof)))
             .map_err(Error::from)?;
         char::from_u32(byte as u32).ok_or_else(|| Error::TokenError(format!("{:x}", byte)))
     }
@@ -126,12 +161,15 @@ impl<R: io::Read> Lexer<R> {
     }
 
     fn read_token(&mut self) -> Result<Token, Error> {
-        let ch = match self.latest_char.filter(|c| !c.is_ascii_whitespace()) {
-            Some(c) => c,
-            None => self.read_nonwhitespace_char()?,
-        };
+        let ch = self.read_nonwhitespace_char()?;
+        if Token::may_be_two_chars(ch) {
+            let next = self.peek_char()?;
+            if let Some(tok) = Token::from_two_chars(&[ch, next]) {
+                let _ = self.read_char();
+                return Ok(tok);
+            }
+        }
         if let Some(tok) = Token::from_char(ch) {
-            self.latest_char = None;
             return Ok(tok);
         }
         self.token_buf.clear();
@@ -149,11 +187,11 @@ impl<R: io::Read> Lexer<R> {
         F: Fn(char) -> bool,
     {
         loop {
-            let ch = self.read_char()?;
-            self.latest_char = Some(ch);
+            let ch = self.peek_char()?;
             if !cond(ch) {
                 break;
             }
+            let _ = self.read_char();
             self.token_buf.push(ch);
         }
         Ok(())

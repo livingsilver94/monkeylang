@@ -1,7 +1,8 @@
-use std::fmt;
 use std::io;
 use std::iter;
 use std::str::{self, FromStr};
+
+use crate::error::Error;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Token {
@@ -128,44 +129,12 @@ impl<R: io::Read> Lexer<R> {
         }
     }
 
-    /// Returns the next character.
-    fn read_char(&mut self) -> Result<char, Error> {
-        let byte = self
-            .input
-            .next()
-            .unwrap_or(Err(io::Error::from(io::ErrorKind::UnexpectedEof)))?;
-        char::from_u32(byte as u32).ok_or_else(|| Error::TokenError(format!("{:x}", byte)))
-    }
-
-    /// Peeks the next character. If it was able to read the character,
-    fn peek_char(&mut self) -> Result<char, Error> {
-        let byte = self
-            .input
-            .peek()
-            .map(|result| match result {
-                Ok(byte) => Ok(*byte),
-                Err(e) => Err(io::Error::from(e.kind())),
-            })
-            .unwrap_or(Err(io::Error::from(io::ErrorKind::UnexpectedEof)))
-            .map_err(Error::from)?;
-        char::from_u32(byte as u32).ok_or_else(|| Error::TokenError(format!("{:x}", byte)))
-    }
-
-    fn read_nonwhitespace_char(&mut self) -> Result<char, Error> {
-        loop {
-            let ch = self.read_char()?;
-            if !ch.is_ascii_whitespace() {
-                return Ok(ch);
-            }
-        }
-    }
-
-    fn read_token(&mut self) -> Result<Token, Error> {
-        let ch = self.read_nonwhitespace_char()?;
+    pub fn next_token(&mut self) -> Result<Token, Error> {
+        let ch = self.next_nonwhitespace_char()?;
         if Token::may_be_two_chars(ch) {
             let next = self.peek_char()?;
             if let Some(tok) = Token::from_two_chars(&[ch, next]) {
-                let _ = self.read_char();
+                let _ = self.next_char();
                 return Ok(tok);
             }
         }
@@ -182,16 +151,45 @@ impl<R: io::Read> Lexer<R> {
         Token::from_str(&self.token_buf).map_err(|_| Error::TokenError(self.token_buf.clone()))
     }
 
-    fn fill_buffer_until<F>(&mut self, cond: F) -> Result<(), Error>
-    where
-        F: Fn(char) -> bool,
-    {
+    /// Returns the next character.
+    fn next_char(&mut self) -> Result<char, Error> {
+        let byte = self
+            .input
+            .next()
+            .unwrap_or(Err(io::Error::from(io::ErrorKind::UnexpectedEof)))?;
+        char::from_u32(byte as u32).ok_or_else(|| Error::TokenError(format!("{:x}", byte)))
+    }
+
+    /// Peeks the next character.
+    fn peek_char(&mut self) -> Result<char, Error> {
+        let byte = self
+            .input
+            .peek()
+            .map(|result| match result {
+                Ok(byte) => Ok(*byte),
+                Err(e) => Err(io::Error::from(e.kind())),
+            })
+            .unwrap_or(Err(io::Error::from(io::ErrorKind::UnexpectedEof)))
+            .map_err(Error::from)?;
+        char::from_u32(byte as u32).ok_or_else(|| Error::TokenError(format!("{:x}", byte)))
+    }
+
+    fn next_nonwhitespace_char(&mut self) -> Result<char, Error> {
+        loop {
+            let ch = self.next_char()?;
+            if !ch.is_ascii_whitespace() {
+                return Ok(ch);
+            }
+        }
+    }
+
+    fn fill_buffer_until(&mut self, cond: impl Fn(char) -> bool) -> Result<(), Error> {
         loop {
             let ch = self.peek_char()?;
             if !cond(ch) {
                 break;
             }
-            let _ = self.read_char();
+            let _ = self.next_char();
             self.token_buf.push(ch);
         }
         Ok(())
@@ -202,7 +200,7 @@ impl<R: io::Read> iter::Iterator for Lexer<R> {
     type Item = Result<Token, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.read_token() {
+        match self.next_token() {
             Ok(tok) => Some(Ok(tok)),
             Err(err) => {
                 if let Error::IO(ref e) = err {
@@ -214,15 +212,6 @@ impl<R: io::Read> iter::Iterator for Lexer<R> {
             }
         }
     }
-}
-
-#[derive(thiserror::Error, fmt::Debug)]
-pub enum Error {
-    #[error("I/O error")]
-    IO(#[from] io::Error),
-
-    #[error("invalid token \"{0}\"")]
-    TokenError(String),
 }
 
 fn is_identifier_char(ch: char) -> bool {

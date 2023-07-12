@@ -1,5 +1,6 @@
 use std::io;
 
+use monkeylang::error::*;
 use monkeylang::lexer::*;
 
 #[test]

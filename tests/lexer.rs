@@ -14,7 +14,7 @@ fn skip_whitespaces() {
 #[test]
 fn detect_single_chars_only() -> Result<(), Error> {
     const CHARS: &str = "=*!,>{(<-+});/";
-    let tokens = &[
+    const TOKENS: &[Token] = &[
         Token::Assign,
         Token::Asterisk,
         Token::Bang,
@@ -34,8 +34,8 @@ fn detect_single_chars_only() -> Result<(), Error> {
     let lex = Lexer::new(io::Cursor::new(CHARS));
     for (i, tok) in lex.into_iter().enumerate() {
         let tok = tok?;
-        assert_eq!(tok, tokens[i]);
-        assert_eq!(tok, tokens[i]);
+        assert_eq!(tok, TOKENS[i]);
+        assert_eq!(tok, TOKENS[i]);
     }
     Ok(())
 }
@@ -43,13 +43,13 @@ fn detect_single_chars_only() -> Result<(), Error> {
 #[test]
 fn detect_two_chars_only() -> Result<(), Error> {
     const CHARS: &str = "==!=";
-    let tokens = &[Token::Equal, Token::NotEqual];
+    const TOKENS: &[Token] = &[Token::Equal, Token::NotEqual];
 
     let lex = Lexer::new(io::Cursor::new(CHARS));
     for (i, tok) in lex.into_iter().enumerate() {
         let tok = tok?;
-        assert_eq!(tok, tokens[i]);
-        assert_eq!(tok, tokens[i]);
+        assert_eq!(tok, TOKENS[i]);
+        assert_eq!(tok, TOKENS[i]);
     }
     Ok(())
 }
@@ -57,7 +57,7 @@ fn detect_two_chars_only() -> Result<(), Error> {
 #[test]
 fn detect_reserved_words_only() -> Result<(), Error> {
     const CHARS: &str = "else false fn if let return false";
-    let tokens = &[
+    const TOKENS: &[Token] = &[
         Token::Else,
         Token::False,
         Token::Function,
@@ -70,8 +70,8 @@ fn detect_reserved_words_only() -> Result<(), Error> {
     let lex = Lexer::new(io::Cursor::new(CHARS));
     for (i, tok) in lex.into_iter().enumerate() {
         let tok = tok?;
-        assert_eq!(tok, tokens[i]);
-        assert_eq!(tok, tokens[i]);
+        assert_eq!(tok, TOKENS[i]);
+        assert_eq!(tok, TOKENS[i]);
     }
     Ok(())
 }

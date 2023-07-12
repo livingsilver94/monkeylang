@@ -1,4 +1,4 @@
-use std::io;
+use std::io::{self, Read};
 use std::iter;
 use std::str::{self, FromStr};
 
@@ -116,17 +116,31 @@ impl FromStr for Token {
     }
 }
 
-pub struct Lexer<R: std::io::Read> {
+pub struct Lexer<R: io::Read> {
     input: iter::Peekable<io::Bytes<R>>,
     token_buf: String,
 }
 
-impl<R: io::Read> Lexer<R> {
+impl<R: Read + Default> Default for Lexer<R> {
+    fn default() -> Self {
+        Self {
+            input: R::default().bytes().peekable(),
+            token_buf: String::with_capacity(32),
+        }
+    }
+}
+
+impl<R: Read> Lexer<R> {
     pub fn new(input: R) -> Self {
         Self {
             input: input.bytes().peekable(),
             token_buf: String::with_capacity(32),
         }
+    }
+
+    /// Resets the Lexer with a new source of data.
+    pub fn reset(&mut self, input: R) {
+        self.input = input.bytes().peekable();
     }
 
     pub fn next_token(&mut self) -> Result<Token, Error> {

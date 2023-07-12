@@ -1,3 +1,6 @@
+use monkeylang::console::Console;
+
 fn main() {
-    println!("Hello, world!");
+    let mut console = Console::new();
+    let _ = console.run();
 }

@@ -1,5 +1,4 @@
 use monkeylang::lexer::*;
-use monkeylang::parser::ast::*;
 use monkeylang::parser::*;
 
 #[test]

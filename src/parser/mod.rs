@@ -1,12 +1,13 @@
+mod ast;
+pub use ast::*;
+
+mod error;
+pub use error::*;
+
 use std::iter::Peekable;
 use std::mem;
 
 use crate::lexer::Token;
-use ast::{Statement, AST};
-
-use self::ast::Expression;
-
-pub mod ast;
 
 pub struct Parser<'a, T: Iterator<Item = &'a Token>> {
     tokens: Peekable<T>,

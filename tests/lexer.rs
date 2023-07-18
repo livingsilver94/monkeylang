@@ -1,7 +1,7 @@
 use std::io;
 
 use monkeylang::error::*;
-use monkeylang::lexer::*;
+use monkeylang::lexer::{Lexer, Token};
 
 #[test]
 fn skip_whitespaces() {

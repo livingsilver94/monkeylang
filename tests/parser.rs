@@ -45,3 +45,30 @@ fn parse_bad_let_statement() {
         )
     }));
 }
+
+#[test]
+fn parse_return_literal_statement() -> Result<(), parser::Error> {
+    let expected = AST::new(vec![Statement::Return(Expression::None)]);
+    let ast =
+        Parser::new(vec![Token::Return, Token::Integer(5), Token::Semicolon].iter()).parse()?;
+    assert_eq!(ast, expected);
+    Ok(())
+}
+
+#[test]
+fn parse_return_expression_statement() -> Result<(), parser::Error> {
+    let expected = AST::new(vec![Statement::Return(Expression::None)]);
+    let ast = Parser::new(
+        vec![
+            Token::Return,
+            Token::Integer(5),
+            Token::Plus,
+            Token::Integer(10),
+            Token::Semicolon,
+        ]
+        .iter(),
+    )
+    .parse()?;
+    assert_eq!(ast, expected);
+    Ok(())
+}

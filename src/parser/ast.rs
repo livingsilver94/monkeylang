@@ -4,7 +4,7 @@ pub enum Statement {
         identifier: String,
         expression: Expression,
     },
-    Return,
+    Return(Expression),
 }
 
 #[derive(Debug, PartialEq, Eq)]

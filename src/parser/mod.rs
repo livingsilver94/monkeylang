@@ -31,6 +31,7 @@ impl<'a, T: Iterator<Item = &'a Token>> Parser<'a, T> {
     fn parse_statement(&mut self) -> Option<Result<Statement, Error>> {
         match self.tokens.next()? {
             Token::Let => Some(self.parse_let()),
+            Token::Return => Some(self.parse_return()),
             _ => None,
         }
     }
@@ -48,6 +49,11 @@ impl<'a, T: Iterator<Item = &'a Token>> Parser<'a, T> {
             identifier,
             expression: Expression::None,
         })
+    }
+
+    fn parse_return(&mut self) -> Result<Statement, Error> {
+        while self.tokens.next().ok_or(Error::EOF)? != &Token::Semicolon {}
+        Ok(Statement::Return(Expression::None))
     }
 
     fn expect_token(&mut self, token: Token) -> Result<&Token, Error> {

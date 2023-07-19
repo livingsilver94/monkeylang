@@ -1,8 +1,9 @@
+use std::fmt;
 use std::str::FromStr;
 
-use super::error::Error;
+use super::Error;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Token {
     // Single-char long.
     Assign,
@@ -110,6 +111,38 @@ impl FromStr for Token {
                 }
                 Ok(Self::Identifier(s.to_string()))
             }
+        }
+    }
+}
+
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Token::Assign => write!(f, "ASSIGN"),
+            Token::Asterisk => write!(f, "ASTERISK"),
+            Token::Bang => write!(f, "BANG"),
+            Token::Comma => write!(f, "COMMA"),
+            Token::Else => write!(f, "ELSE"),
+            Token::Equal => write!(f, "EQUAL"),
+            Token::False => write!(f, "FALSE"),
+            Token::Function => write!(f, "FUNCTION"),
+            Token::GreaterThan => write!(f, "GREATER_THAN"),
+            Token::Identifier(s) => write!(f, "IDENTIFIER({})", s),
+            Token::If => write!(f, "IF"),
+            Token::Integer(int) => write!(f, "INTEGER({})", int),
+            Token::LeftBrace => write!(f, "LEFT_BRACE"),
+            Token::LeftParen => write!(f, "LEFT_PAREN"),
+            Token::LessThan => write!(f, "LESS_THAN"),
+            Token::Let => write!(f, "LET"),
+            Token::Minus => write!(f, "MINUS"),
+            Token::NotEqual => write!(f, "NOT_EQUAL"),
+            Token::Plus => write!(f, "PLUS"),
+            Token::Return => write!(f, "RETURN"),
+            Token::RightBrace => write!(f, "RIGHT_BRACE"),
+            Token::RightParen => write!(f, "RIGHT_PAREN"),
+            Token::Semicolon => write!(f, "SEMICOLON"),
+            Token::Slash => write!(f, "SLASH"),
+            Token::True => write!(f, "TRUE"),
         }
     }
 }

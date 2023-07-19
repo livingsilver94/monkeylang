@@ -20,49 +20,48 @@ impl<'a, T: Iterator<Item = &'a Token>> Parser<'a, T> {
         }
     }
 
-    pub fn parse(&mut self) -> AST {
+    pub fn parse(&mut self) -> Result<AST, Error> {
         let mut tree = AST::default();
         while let Some(st) = self.parse_statement() {
-            tree.push(st);
+            tree.push(st?);
         }
-        tree
+        Ok(tree)
     }
 
-    fn parse_statement(&mut self) -> Option<Statement> {
+    fn parse_statement(&mut self) -> Option<Result<Statement, Error>> {
         match self.tokens.next()? {
-            Token::Let => self.parse_let(),
+            Token::Let => Some(self.parse_let()),
             _ => None,
         }
     }
 
-    fn parse_let(&mut self) -> Option<Statement> {
-        let identifier = match self.tokens.peek()? {
-            Token::Identifier(s) => {
-                self.tokens.next();
-                s.to_string()
-            }
-            _ => return None,
-        };
-        if !self.peek_expected(Token::Assign) {
-            return None;
-        }
-        while self.tokens.next()? != &Token::Semicolon {}
-        Some(Statement::Let {
+    fn parse_let(&mut self) -> Result<Statement, Error> {
+        let identifier = self
+            .expect_token(Token::Identifier(String::default()))
+            .map(|tok| match tok {
+                Token::Identifier(s) => s.to_string(),
+                _ => unreachable!(),
+            })?;
+        self.expect_token(Token::Assign)?;
+        while self.tokens.next().ok_or(Error::EOF)? != &Token::Semicolon {}
+        Ok(Statement::Let {
             identifier,
             expression: Expression::None,
         })
     }
 
-    fn peek_expected(&mut self, token: Token) -> bool {
+    fn expect_token(&mut self, token: Token) -> Result<&Token, Error> {
         match self.tokens.peek() {
             Some(tok) => {
                 if mem::discriminant(*tok) != mem::discriminant(&token) {
-                    return false;
+                    return Err(Error::ExpectedToken {
+                        expected: token,
+                        got: (**tok).clone(),
+                    });
                 }
-                let _ = self.tokens.next();
-                true
+                Ok(self.tokens.next().unwrap())
             }
-            None => false,
+            None => Err(Error::EOF),
         }
     }
 }

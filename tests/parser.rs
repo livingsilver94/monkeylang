@@ -1,8 +1,8 @@
 use monkeylang::lexer::*;
-use monkeylang::parser::*;
+use monkeylang::parser::{self, *};
 
 #[test]
-fn parse_let_statement() {
+fn parse_let_statement() -> Result<(), parser::Error> {
     let expected = AST::new(vec![Statement::Let {
         identifier: "x".to_string(),
         expression: Expression::None,
@@ -17,6 +17,7 @@ fn parse_let_statement() {
         ]
         .iter(),
     )
-    .parse();
+    .parse()?;
     assert_eq!(ast, expected);
+    Ok(())
 }

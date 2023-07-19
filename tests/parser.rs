@@ -21,3 +21,27 @@ fn parse_let_statement() -> Result<(), parser::Error> {
     assert_eq!(ast, expected);
     Ok(())
 }
+
+#[test]
+fn parse_bad_let_statement() {
+    let ast = Parser::new(
+        vec![
+            Token::Let,
+            Token::Identifier("x".to_string()),
+            Token::True,
+            Token::Integer(5),
+            Token::Semicolon,
+        ]
+        .iter(),
+    )
+    .parse();
+    assert!(ast.is_err_and(|e| {
+        matches!(
+            e,
+            parser::Error::ExpectedToken {
+                expected: _,
+                got: _
+            }
+        )
+    }));
+}

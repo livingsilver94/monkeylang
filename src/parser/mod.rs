@@ -22,17 +22,18 @@ impl<'a, T: Iterator<Item = &'a Token>> Parser<'a, T> {
 
     pub fn parse(&mut self) -> Result<AST, Error> {
         let mut tree = AST::default();
-        while let Some(st) = self.parse_statement() {
+        while let Some(st) = self.parse_next_statement() {
             tree.push(st?);
         }
         Ok(tree)
     }
 
-    fn parse_statement(&mut self) -> Option<Result<Statement, Error>> {
-        match self.tokens.next()? {
+    fn parse_next_statement(&mut self) -> Option<Result<Statement, Error>> {
+        let tok = self.tokens.next()?;
+        match tok {
             Token::Let => Some(self.parse_let()),
             Token::Return => Some(self.parse_return()),
-            _ => None,
+            _ => Some(self.parse_expression_statement(tok)),
         }
     }
 
@@ -56,6 +57,19 @@ impl<'a, T: Iterator<Item = &'a Token>> Parser<'a, T> {
         Ok(Statement::Return(Expression::None))
     }
 
+    fn parse_expression_statement(&mut self, tok: &Token) -> Result<Statement, Error> {
+        let exp = self.parse_expression(tok, Priority::Lowest)?;
+        let _ = self.expect_token(Token::Semicolon); // Semicolon is optional.
+        Ok(Statement::Expression(exp))
+    }
+
+    fn parse_expression(&mut self, tok: &Token, _priority: Priority) -> Result<Expression, Error> {
+        if let Some(exp) = self.parse_prefix(tok) {
+            return exp;
+        }
+        unreachable!();
+    }
+
     fn expect_token(&mut self, token: Token) -> Result<&Token, Error> {
         match self.tokens.peek() {
             Some(tok) => {
@@ -68,6 +82,14 @@ impl<'a, T: Iterator<Item = &'a Token>> Parser<'a, T> {
                 Ok(self.tokens.next().unwrap())
             }
             None => Err(Error::EOF),
+        }
+    }
+
+    fn parse_prefix(&mut self, tok: &Token) -> Option<Result<Expression, Error>> {
+        match tok {
+            Token::Identifier(s) => Some(Ok(Expression::Identifier(s.to_string()))),
+            Token::Integer(int) => Some(Ok(Expression::Integer(*int))),
+            _ => None,
         }
     }
 }

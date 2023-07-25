@@ -39,15 +39,7 @@ fn parse_bad_let_statement() {
 }
 
 #[test]
-fn parse_return_literal_statement() -> Result<(), parser::Error> {
-    let expected = AST::new(vec![Statement::Return(Expression::None)]);
-    let ast = Parser::new(vec![Token::Return, Token::Integer(5), Token::Semicolon].iter()).parse()?;
-    assert_eq!(ast, expected);
-    Ok(())
-}
-
-#[test]
-fn parse_return_expression_statement() -> Result<(), parser::Error> {
+fn parse_return_statement() -> Result<(), parser::Error> {
     let expected = AST::new(vec![Statement::Return(Expression::None)]);
     let ast = Parser::new(
         vec![
@@ -65,7 +57,7 @@ fn parse_return_expression_statement() -> Result<(), parser::Error> {
 }
 
 #[test]
-fn parse_nonrecursive_expressions() -> Result<(), parser::Error> {
+fn parse_literal_expressions() -> Result<(), parser::Error> {
     let tests = vec![
         (
             vec![Token::Identifier("var".to_string()), Token::Semicolon],
@@ -74,6 +66,31 @@ fn parse_nonrecursive_expressions() -> Result<(), parser::Error> {
         (
             vec![Token::Integer(65), Token::Semicolon],
             AST::new(vec![Statement::Expression(Expression::Integer(65))]),
+        ),
+    ];
+    for test in tests {
+        let ast = Parser::new(test.0.iter()).parse()?;
+        assert_eq!(ast, test.1);
+    }
+    Ok(())
+}
+
+#[test]
+fn parse_unary_expressions() -> Result<(), parser::Error> {
+    let tests = vec![
+        (
+            vec![Token::Bang, Token::Integer(5)], // !5
+            AST::new(vec![Statement::Expression(Expression::Unary {
+                operator: Token::Bang,
+                expression: Box::new(Expression::Integer(5)),
+            })]),
+        ),
+        (
+            vec![Token::Minus, Token::Integer(5)], // -5
+            AST::new(vec![Statement::Expression(Expression::Unary {
+                operator: Token::Minus,
+                expression: Box::new(Expression::Integer(5)),
+            })]),
         ),
     ];
     for test in tests {

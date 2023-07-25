@@ -1,3 +1,5 @@
+use crate::lexer::Token;
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum Statement {
     /// An expression statement. Although it may sound confusing,
@@ -17,7 +19,7 @@ pub enum Priority {
     LessOrGreaterThan,
     Sum,
     Product,
-    Prefix,
+    Unary,
     Call,
 }
 
@@ -26,6 +28,10 @@ pub enum Expression {
     None,
     Identifier(String),
     Integer(i64),
+    Unary {
+        operator: Token,
+        expression: Box<Expression>,
+    },
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]

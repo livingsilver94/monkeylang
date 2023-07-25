@@ -15,29 +15,24 @@ pub struct Parser<'a, T: Iterator<Item = &'a Token>> {
 
 impl<'a, T: Iterator<Item = &'a Token>> Parser<'a, T> {
     pub fn new(it: T) -> Self {
-        Self {
-            tokens: it.peekable(),
-        }
+        Self { tokens: it.peekable() }
     }
 
     pub fn parse(&mut self) -> Result<AST, Error> {
         let mut tree = AST::default();
-        while let Some(st) = self.parse_next_statement() {
-            tree.push(st?);
+        while let Some(tok) = self.tokens.peek() {
+            let statement = match tok {
+                Token::Let => self.parse_let(),
+                Token::Return => self.parse_return(),
+                _ => self.parse_expression_statement(),
+            }?;
+            tree.push(statement);
         }
         Ok(tree)
     }
 
-    fn parse_next_statement(&mut self) -> Option<Result<Statement, Error>> {
-        let tok = self.tokens.next()?;
-        match tok {
-            Token::Let => Some(self.parse_let()),
-            Token::Return => Some(self.parse_return()),
-            _ => Some(self.parse_expression_statement(tok)),
-        }
-    }
-
     fn parse_let(&mut self) -> Result<Statement, Error> {
+        self.expect_token(Token::Let)?;
         let identifier = self
             .expect_token(Token::Identifier(String::default()))
             .map(|tok| match tok {
@@ -45,7 +40,7 @@ impl<'a, T: Iterator<Item = &'a Token>> Parser<'a, T> {
                 _ => unreachable!(),
             })?;
         self.expect_token(Token::Assign)?;
-        while self.tokens.next().ok_or(Error::EOF)? != &Token::Semicolon {}
+        while self.next_token()? != &Token::Semicolon {}
         Ok(Statement::Let {
             identifier,
             expression: Expression::None,
@@ -53,43 +48,50 @@ impl<'a, T: Iterator<Item = &'a Token>> Parser<'a, T> {
     }
 
     fn parse_return(&mut self) -> Result<Statement, Error> {
-        while self.tokens.next().ok_or(Error::EOF)? != &Token::Semicolon {}
+        self.expect_token(Token::Return)?;
+        while self.next_token()? != &Token::Semicolon {}
         Ok(Statement::Return(Expression::None))
     }
 
-    fn parse_expression_statement(&mut self, tok: &Token) -> Result<Statement, Error> {
-        let exp = self.parse_expression(tok, Priority::Lowest)?;
+    fn parse_expression_statement(&mut self) -> Result<Statement, Error> {
+        let exp = self.parse_expression(Priority::Lowest)?;
         let _ = self.expect_token(Token::Semicolon); // Semicolon is optional.
         Ok(Statement::Expression(exp))
     }
 
-    fn parse_expression(&mut self, tok: &Token, _priority: Priority) -> Result<Expression, Error> {
-        if let Some(exp) = self.parse_prefix(tok) {
-            return exp;
+    fn parse_expression(&mut self, _priority: Priority) -> Result<Expression, Error> {
+        self.parse_prefix()
+    }
+
+    fn parse_prefix(&mut self) -> Result<Expression, Error> {
+        let tok = self.next_token()?;
+        match tok {
+            Token::Identifier(s) => Ok(Expression::Identifier(s.to_string())),
+            Token::Integer(int) => Ok(Expression::Integer(*int)),
+            Token::Bang | Token::Minus => {
+                let tok = tok.clone();
+                let expr = self.parse_expression(Priority::Unary)?;
+                Ok(Expression::Unary {
+                    operator: tok,
+                    expression: Box::new(expr),
+                })
+            }
+            _ => unreachable!(),
         }
-        unreachable!();
+    }
+
+    fn next_token(&mut self) -> Result<&Token, Error> {
+        self.tokens.next().ok_or(Error::EOF)
     }
 
     fn expect_token(&mut self, token: Token) -> Result<&Token, Error> {
-        match self.tokens.peek() {
-            Some(tok) => {
-                if mem::discriminant(*tok) != mem::discriminant(&token) {
-                    return Err(Error::ExpectedToken {
-                        expected: token,
-                        got: (**tok).clone(),
-                    });
-                }
-                Ok(self.tokens.next().unwrap())
-            }
-            None => Err(Error::EOF),
+        let tok = self.next_token()?;
+        if mem::discriminant(tok) != mem::discriminant(&token) {
+            return Err(Error::ExpectedToken {
+                expected: token,
+                got: (*tok).clone(),
+            });
         }
-    }
-
-    fn parse_prefix(&mut self, tok: &Token) -> Option<Result<Expression, Error>> {
-        match tok {
-            Token::Identifier(s) => Some(Ok(Expression::Identifier(s.to_string()))),
-            Token::Integer(int) => Some(Ok(Expression::Integer(*int))),
-            _ => None,
-        }
+        Ok(tok)
     }
 }

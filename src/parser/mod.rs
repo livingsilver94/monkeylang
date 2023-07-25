@@ -59,8 +59,17 @@ impl<'a, T: Iterator<Item = &'a Token>> Parser<'a, T> {
         Ok(Statement::Expression(exp))
     }
 
-    fn parse_expression(&mut self, _priority: Priority) -> Result<Expression, Error> {
-        self.parse_prefix()
+    /// Parses an expression using the Pratt parsing algorithm.
+    fn parse_expression(&mut self, priority: Priority) -> Result<Expression, Error> {
+        let mut exp = self.parse_prefix()?;
+        while let Some(tok) = self.tokens.peek() {
+            if tok != &&Token::Semicolon && priority < Priority::from_token(tok) {
+                exp = self.parse_infix(exp)?;
+            } else {
+                break;
+            }
+        }
+        Ok(exp)
     }
 
     fn parse_prefix(&mut self) -> Result<Expression, Error> {
@@ -77,6 +86,29 @@ impl<'a, T: Iterator<Item = &'a Token>> Parser<'a, T> {
                 })
             }
             _ => unreachable!(),
+        }
+    }
+
+    fn parse_infix(&mut self, left_expr: Expression) -> Result<Expression, Error> {
+        let tok = self.next_token()?;
+        match tok {
+            Token::Plus
+            | Token::Minus
+            | Token::Asterisk
+            | Token::Slash
+            | Token::GreaterThan
+            | Token::LessThan
+            | Token::Equal
+            | Token::NotEqual => {
+                let tok = tok.clone();
+                let right_exp = self.parse_expression(Priority::from_token(&tok))?;
+                Ok(Expression::Binary {
+                    left: Box::new(left_expr),
+                    operator: tok,
+                    right: Box::new(right_exp),
+                })
+            }
+            _ => Ok(left_expr),
         }
     }
 

@@ -13,6 +13,7 @@ pub enum Statement {
     Return(Expression),
 }
 
+#[derive(PartialEq, PartialOrd)]
 pub enum Priority {
     Lowest,
     Equals,
@@ -23,6 +24,19 @@ pub enum Priority {
     Call,
 }
 
+impl Priority {
+    /// Returns the Token's priority in an expression.
+    pub fn from_token(tok: &Token) -> Self {
+        match tok {
+            Token::Asterisk | Token::Slash => Self::Product,
+            Token::LessThan | Token::GreaterThan => Self::LessOrGreaterThan,
+            Token::Plus | Token::Minus => Self::Sum,
+            Token::Equal | Token::NotEqual => Self::Equals,
+            _ => Self::Lowest,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum Expression {
     None,
@@ -31,6 +45,11 @@ pub enum Expression {
     Unary {
         operator: Token,
         expression: Box<Expression>,
+    },
+    Binary {
+        left: Box<Expression>,
+        operator: Token,
+        right: Box<Expression>,
     },
 }
 

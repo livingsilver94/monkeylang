@@ -79,17 +79,17 @@ fn parse_literal_expressions() -> Result<(), parser::Error> {
 fn parse_unary_expressions() -> Result<(), parser::Error> {
     let tests = vec![
         (
-            vec![Token::Bang, Token::Integer(5)], // !5
+            vec![Token::Bang, Token::Integer(5)], // !5.
             AST::new(vec![Statement::Expression(Expression::Unary {
                 operator: Token::Bang,
-                expression: Box::new(Expression::Integer(5)),
+                expression: boxx(Expression::Integer(5)),
             })]),
         ),
         (
-            vec![Token::Minus, Token::Integer(5)], // -5
+            vec![Token::Minus, Token::Integer(5)], // -5.
             AST::new(vec![Statement::Expression(Expression::Unary {
                 operator: Token::Minus,
-                expression: Box::new(Expression::Integer(5)),
+                expression: boxx(Expression::Integer(5)),
             })]),
         ),
     ];
@@ -98,4 +98,112 @@ fn parse_unary_expressions() -> Result<(), parser::Error> {
         assert_eq!(ast, test.1);
     }
     Ok(())
+}
+
+#[test]
+fn parse_binary_expressions() -> Result<(), parser::Error> {
+    let tests = vec![
+        (
+            vec![Token::Integer(5), Token::Plus, Token::Integer(5)], // 5 + 5.
+            AST::new(vec![Statement::Expression(Expression::Binary {
+                left: boxx(Expression::Integer(5)),
+                operator: Token::Plus,
+                right: boxx(Expression::Integer(5)),
+            })]),
+        ),
+        (
+            vec![Token::Integer(5), Token::Minus, Token::Integer(5)], // 5 - 5.
+            AST::new(vec![Statement::Expression(Expression::Binary {
+                left: boxx(Expression::Integer(5)),
+                operator: Token::Minus,
+                right: boxx(Expression::Integer(5)),
+            })]),
+        ),
+        (
+            vec![Token::Integer(5), Token::Asterisk, Token::Integer(5)], // 5 * 5.
+            AST::new(vec![Statement::Expression(Expression::Binary {
+                left: boxx(Expression::Integer(5)),
+                operator: Token::Asterisk,
+                right: boxx(Expression::Integer(5)),
+            })]),
+        ),
+        (
+            vec![Token::Integer(5), Token::Slash, Token::Integer(5)], // 5 / 5.
+            AST::new(vec![Statement::Expression(Expression::Binary {
+                left: boxx(Expression::Integer(5)),
+                operator: Token::Slash,
+                right: boxx(Expression::Integer(5)),
+            })]),
+        ),
+        (
+            vec![Token::Integer(5), Token::GreaterThan, Token::Integer(5)], // 5 > 5.
+            AST::new(vec![Statement::Expression(Expression::Binary {
+                left: boxx(Expression::Integer(5)),
+                operator: Token::GreaterThan,
+                right: boxx(Expression::Integer(5)),
+            })]),
+        ),
+        (
+            vec![Token::Integer(5), Token::LessThan, Token::Integer(5)], // 5 < 5.
+            AST::new(vec![Statement::Expression(Expression::Binary {
+                left: boxx(Expression::Integer(5)),
+                operator: Token::LessThan,
+                right: boxx(Expression::Integer(5)),
+            })]),
+        ),
+        (
+            vec![Token::Integer(5), Token::Equal, Token::Integer(5)], // 5 == 5.
+            AST::new(vec![Statement::Expression(Expression::Binary {
+                left: boxx(Expression::Integer(5)),
+                operator: Token::Equal,
+                right: boxx(Expression::Integer(5)),
+            })]),
+        ),
+        (
+            vec![Token::Integer(5), Token::NotEqual, Token::Integer(5)], // 5 != 5.
+            AST::new(vec![Statement::Expression(Expression::Binary {
+                left: boxx(Expression::Integer(5)),
+                operator: Token::NotEqual,
+                right: boxx(Expression::Integer(5)),
+            })]),
+        ),
+    ];
+    for test in tests {
+        let ast = Parser::new(test.0.iter()).parse()?;
+        assert_eq!(ast, test.1);
+    }
+    Ok(())
+}
+
+#[test]
+fn parse_nested_binary_expressions() -> Result<(), parser::Error> {
+    let tests = vec![(
+        vec![
+            Token::Integer(5),
+            Token::Plus,
+            Token::Integer(5),
+            Token::Plus,
+            Token::Integer(5),
+        ], // 5 + 5 + 5.
+        AST::new(vec![Statement::Expression(Expression::Binary {
+            left: boxx(Expression::Binary {
+                left: boxx(Expression::Integer(5)),
+                operator: Token::Plus,
+                right: boxx(Expression::Integer(5)),
+            }),
+            operator: Token::Plus,
+            right: boxx(Expression::Integer(5)),
+        })]),
+    )];
+    for test in tests {
+        let ast = Parser::new(test.0.iter()).parse()?;
+        assert_eq!(ast, test.1);
+    }
+    Ok(())
+}
+
+/// Just an abbreviated Box::new(T).
+#[inline(always)]
+fn boxx<T>(val: T) -> Box<T> {
+    Box::new(val)
 }

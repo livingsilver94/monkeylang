@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::lexer::Token;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -11,6 +13,16 @@ pub enum Statement {
         expression: Expression,
     },
     Return(Expression),
+}
+
+impl Display for Statement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Statement::Expression(exp) => write!(f, "{}", exp),
+            Statement::Let { identifier, expression } => write!(f, "{} {} = {}", Token::Let, identifier, expression),
+            Statement::Return(exp) => write!(f, "{} {}", Token::Return, exp),
+        }
+    }
 }
 
 #[derive(PartialEq, PartialOrd)]
@@ -51,6 +63,20 @@ pub enum Expression {
         operator: Token,
         right: Box<Expression>,
     },
+}
+
+impl Display for Expression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "(")?;
+        match self {
+            Expression::None => Ok(()),
+            Expression::Identifier(name) => write!(f, "{}", name),
+            Expression::Integer(int) => write!(f, "{}", int),
+            Expression::Unary { operator, expression } => write!(f, "{}{}", operator, expression),
+            Expression::Binary { left, operator, right } => write!(f, "{}{}{}", left, operator, right),
+        }?;
+        write!(f, ")")
+    }
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]

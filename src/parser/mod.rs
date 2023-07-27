@@ -86,6 +86,13 @@ impl<'a, T: Iterator<Item = &'a Token>> Parser<'a, T> {
                     expression: Box::new(expr),
                 })
             }
+            Token::LeftParen => {
+                // Reset the priority as if we were parsing an expression
+                // from the beginning.
+                let expr = self.parse_expression(Priority::Lowest)?;
+                self.expect_token(Token::RightParen)?;
+                Ok(expr)
+            }
             _ => unreachable!(),
         }
     }

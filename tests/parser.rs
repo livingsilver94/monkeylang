@@ -210,26 +210,50 @@ fn parse_nested_binary_expressions() -> Result<(), parser::Error> {
     Ok(())
 }
 
+/// Tests expressions with unobvious priority, e.g. with a multiplication
+/// on the right or parentheses to override the default priority.
 #[test]
 fn parse_expressions_with_priority() -> Result<(), parser::Error> {
-    let tests = vec![(
-        vec![
-            Token::Integer(5),
-            Token::Plus,
-            Token::Integer(5),
-            Token::Asterisk,
-            Token::Integer(5),
-        ], // 5 + 5 * 5.
-        AST::new(vec![Statement::Expression(Expression::Binary {
-            left: boxx(Expression::Integer(5)),
-            operator: Token::Plus,
-            right: boxx(Expression::Binary {
+    let tests = vec![
+        (
+            vec![
+                Token::Integer(5),
+                Token::Plus,
+                Token::Integer(5),
+                Token::Asterisk,
+                Token::Integer(5),
+            ], // 5 + 5 * 5.
+            AST::new(vec![Statement::Expression(Expression::Binary {
                 left: boxx(Expression::Integer(5)),
+                operator: Token::Plus,
+                right: boxx(Expression::Binary {
+                    left: boxx(Expression::Integer(5)),
+                    operator: Token::Asterisk,
+                    right: boxx(Expression::Integer(5)),
+                }),
+            })]),
+        ),
+        (
+            vec![
+                Token::LeftParen,
+                Token::Integer(10),
+                Token::Plus,
+                Token::Integer(5),
+                Token::RightParen,
+                Token::Asterisk,
+                Token::Integer(5),
+            ], // (10 + 5) * 5.
+            AST::new(vec![Statement::Expression(Expression::Binary {
+                left: boxx(Expression::Binary {
+                    left: boxx(Expression::Integer(10)),
+                    operator: Token::Plus,
+                    right: boxx(Expression::Integer(5)),
+                }),
                 operator: Token::Asterisk,
                 right: boxx(Expression::Integer(5)),
-            }),
-        })]),
-    )];
+            })]),
+        ),
+    ];
     for test in tests {
         let ast = Parser::new(test.0.iter()).parse()?;
         assert_eq!(ast, test.1);

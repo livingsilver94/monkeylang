@@ -5,9 +5,9 @@ use crate::lexer::Token;
 #[derive(Debug, PartialEq, Eq)]
 pub enum Statement {
     /// An expression statement. Although it may sound confusing,
-    /// a statement like `5 + 10;` is legal in Monkey. Furthermore,
-    /// we need a statement wrapper around an expression for the parsing logic.
+    /// a statement like `5 + 10;` is legal in Monkey.
     Expression(Expression),
+
     Let {
         identifier: String,
         expression: Expression,
@@ -64,6 +64,11 @@ pub enum Expression {
         operator: Token,
         right: Box<Expression>,
     },
+    If {
+        cond: Box<Expression>,
+        conseq: Vec<Statement>,
+        altern: Option<Vec<Statement>>,
+    },
 }
 
 impl Display for Expression {
@@ -76,6 +81,19 @@ impl Display for Expression {
             Expression::Integer(int) => write!(f, "{}", int),
             Expression::Unary { operator, expression } => write!(f, "{}{}", operator, expression),
             Expression::Binary { left, operator, right } => write!(f, "{}{}{}", left, operator, right),
+            Expression::If { cond, conseq, altern } => {
+                write!(f, "{} {} ", Token::If, cond)?;
+                for st in conseq {
+                    write!(f, "{}", st)?;
+                }
+                if let Some(alt) = altern {
+                    write!(f, " {} ", Token::Else)?;
+                    for st in alt {
+                        write!(f, "{}", st)?;
+                    }
+                }
+                Ok(())
+            }
         }?;
         write!(f, ")")
     }

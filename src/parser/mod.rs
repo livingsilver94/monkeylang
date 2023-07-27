@@ -75,6 +75,7 @@ impl<'a, T: Iterator<Item = &'a Token>> Parser<'a, T> {
     fn parse_prefix(&mut self) -> Result<Expression, Error> {
         let tok = self.next_token()?;
         match tok {
+            Token::True | Token::False => Ok(Expression::Boolean(tok == &Token::True)),
             Token::Identifier(s) => Ok(Expression::Identifier(s.to_string())),
             Token::Integer(int) => Ok(Expression::Integer(*int)),
             Token::Bang | Token::Minus => {

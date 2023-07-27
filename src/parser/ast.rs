@@ -52,6 +52,7 @@ impl Priority {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Expression {
     None,
+    Boolean(bool),
     Identifier(String),
     Integer(i64),
     Unary {
@@ -70,6 +71,7 @@ impl Display for Expression {
         write!(f, "(")?;
         match self {
             Expression::None => Ok(()),
+            Expression::Boolean(b) => write!(f, "{}", b),
             Expression::Identifier(name) => write!(f, "{}", name),
             Expression::Integer(int) => write!(f, "{}", int),
             Expression::Unary { operator, expression } => write!(f, "{}{}", operator, expression),

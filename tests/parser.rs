@@ -60,6 +60,14 @@ fn parse_return_statement() -> Result<(), parser::Error> {
 fn parse_literal_expressions() -> Result<(), parser::Error> {
     let tests = vec![
         (
+            vec![Token::False, Token::Semicolon],
+            AST::new(vec![Statement::Expression(Expression::Boolean(false))]),
+        ),
+        (
+            vec![Token::True, Token::Semicolon],
+            AST::new(vec![Statement::Expression(Expression::Boolean(true))]),
+        ),
+        (
             vec![Token::Identifier("var".to_string()), Token::Semicolon],
             AST::new(vec![Statement::Expression(Expression::Identifier("var".to_string()))]),
         ),

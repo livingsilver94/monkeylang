@@ -19,16 +19,29 @@ impl<'a, T: Iterator<Item = &'a Token>> Parser<'a, T> {
     }
 
     pub fn parse(&mut self) -> Result<AST, Error> {
-        let mut tree = AST::default();
+        let statements = self.parse_statements().map_err(|partials| partials.error)?;
+        Ok(AST::new(statements))
+    }
+
+    fn parse_statements(&mut self) -> Result<Vec<Statement>, PartialStatements> {
+        let mut statements = Vec::new();
         while let Some(tok) = self.tokens.peek() {
             let statement = match tok {
                 Token::Let => self.parse_let(),
                 Token::Return => self.parse_return(),
                 _ => self.parse_expression_statement(),
-            }?;
-            tree.push(statement);
+            };
+            match statement {
+                Ok(stat) => statements.push(stat),
+                Err(partial) => {
+                    return Err(PartialStatements {
+                        statements,
+                        error: partial,
+                    })
+                }
+            }
         }
-        Ok(tree)
+        Ok(statements)
     }
 
     fn parse_let(&mut self) -> Result<Statement, Error> {
@@ -93,6 +106,31 @@ impl<'a, T: Iterator<Item = &'a Token>> Parser<'a, T> {
                 self.expect_token(Token::RightParen)?;
                 Ok(expr)
             }
+            Token::If => {
+                self.expect_token(Token::LeftParen)?;
+                let cond = self.parse_expression(Priority::Lowest)?;
+                self.expect_token(Token::RightParen)?;
+                self.expect_token(Token::LeftBrace)?;
+                let conseq: Vec<Statement> = match self.parse_statements() {
+                    Ok(stats) => stats,
+                    Err(e) => {
+                        if let Error::ExpectedToken { expected: _, got } = &e.error {
+                            if got == &Token::RightBrace {
+                                e.statements
+                            } else {
+                                return Err(e.error);
+                            }
+                        } else {
+                            return Err(e.error);
+                        }
+                    }
+                };
+                Ok(Expression::If {
+                    cond: Box::new(cond),
+                    conseq,
+                    altern: None,
+                })
+            }
             _ => unreachable!(),
         }
     }
@@ -134,4 +172,11 @@ impl<'a, T: Iterator<Item = &'a Token>> Parser<'a, T> {
         }
         Ok(tok)
     }
+}
+
+/// Contains the statements parsed before the error occurred, along
+/// with the error.
+struct PartialStatements {
+    statements: Vec<Statement>,
+    error: Error,
 }

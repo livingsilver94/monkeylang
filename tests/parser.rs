@@ -261,6 +261,39 @@ fn parse_expressions_with_priority() -> Result<(), parser::Error> {
     Ok(())
 }
 
+#[test]
+fn parse_if_else() -> Result<(), parser::Error> {
+    let tests = vec![(
+        vec![
+            Token::If,
+            Token::LeftParen,
+            Token::Integer(5),
+            Token::Equal,
+            Token::Integer(5),
+            Token::RightParen,
+            Token::LeftBrace,
+            Token::Return,
+            Token::Integer(10),
+            Token::Semicolon,
+            Token::RightBrace,
+        ], // if (5 == 5) { return 10; }.
+        AST::new(vec![Statement::Expression(Expression::If {
+            cond: boxx(Expression::Binary {
+                left: boxx(Expression::Integer(5)),
+                operator: Token::Equal,
+                right: boxx(Expression::Integer(5)),
+            }),
+            conseq: vec![Statement::Return(Expression::Integer(10))],
+            altern: None,
+        })]),
+    )];
+    for test in tests {
+        let ast = Parser::new(test.0.iter()).parse()?;
+        assert_eq!(ast, test.1);
+    }
+    Ok(())
+}
+
 /// Just an abbreviated Box::new(T).
 #[inline(always)]
 fn boxx<T>(val: T) -> Box<T> {
